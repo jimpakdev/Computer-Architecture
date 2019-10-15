@@ -31,6 +31,23 @@ running = True
 # Create 8 registers
 register = [0] * 8
 
+def load_memory(filename):
+    try:
+        address = 0
+
+    with open(sys.argv[1]) as f:
+        for line in f:
+            # Prcoess comments:
+            # Ignore anything after a # symbol
+            comment_split = line.split("#")
+            # Convert any numbers from binary strings to integers
+            num = comment_split[0]
+            try: 
+                x = int(num, 2)
+            except ValueError:
+                continue
+            # Print in binary and decimal
+            print(f"{x:08b}: {x:d}")
 
 while running:
     # Do stuff
