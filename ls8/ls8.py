@@ -9,6 +9,11 @@
 #  Add the LDI instruction
 #  Add the PRN instruction
 
+# Day 2: Add the ability to load files dynamically, get mult.ls8 running
+#  Un-hardcode the machine code
+#  Implement the load() function to load an .ls8 file given the filename passed in as an argument
+#  Implement a Multiply instruction (run mult8.ls8)
+
 """Main."""
 
 import sys
@@ -16,5 +21,5 @@ from cpu import *
 
 cpu = CPU()
 
-cpu.load()
+cpu.load(sys.argv[1])
 cpu.run()

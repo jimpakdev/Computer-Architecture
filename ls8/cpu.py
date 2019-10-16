@@ -7,31 +7,36 @@ class CPU:
 
     def __init__(self):
         """Construct a new CPU."""
-        self.ram = [0] * 16
+        self.ram = [0] * 256
         self.reg = [0] * 8
         self.pc = 0
 
-    def load(self):
+    def load(self, filename):
         """Load a program into memory."""
 
         address = 0
+        # Implement function to load an .ls8 file 
+        # Pass in filename as argument
+        if len(sys.argv) != 2:
+            print("usage: file.py <filename>", file=sys.stderr)
+            sys.exit(1)
 
-        # For now, we've just hardcoded a program:
+        try:
+            with open(filename) as f:
+                for line in f:
+                    # ignore anything after a #
+                    comment_split = line.split("#")
+                    # Convert any numbers from binary strings to integers
+                    num = comment_split[0].strip()
 
-        program = [
-            # From print8.ls8
-            0b10000010, # LDI R0,8    #### 130 
-            0b00000000,
-            0b00001000,
-            0b01000111, # PRN R0    #### 71
-            0b00000000,
-            0b00000001, # HLT    #### 1
-        ]
+                    val = int(num, 2)
+             
+                    self.ram[address] = val
+                    address += 1
 
-        for instruction in program:
-            self.ram[address] = instruction
-            address += 1
-
+        except FileNotFoundError:
+            print(f"{sys.argv[0]}: {sys.argv[1]} not found")
+            sys.exit(2)
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
@@ -67,6 +72,7 @@ class CPU:
         LDI = 0b10000010
         PRN = 0b01000111
         HLT = 0b00000001 
+        MUL = 0b10100010
 
         running = True
 
@@ -87,6 +93,13 @@ class CPU:
             elif IR == PRN:
                 print(self.reg[operand_a])
                 self.pc += 2
+
+            elif IR == MUL:
+                self.reg[operand_a] *= self.reg[operand_b]
+                self.pc += 3
+
+            else:
+                print('Error: cannot recognize instruction provided')
 
         self.trace()
 

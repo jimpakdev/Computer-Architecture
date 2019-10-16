@@ -83,6 +83,10 @@ while running:
         register[reg_a] += register[reg_b] # Add registers, store in reg_a
         pc += 3
 
+    elif command == PUSH:
+        reg = memory[pc + 1]
+        val = memory[register[SP]]
+
     else:
         print(f"Unknown instruction: {command}")
         sys.exit(1)
