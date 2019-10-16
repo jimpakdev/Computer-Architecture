@@ -17,9 +17,6 @@ class CPU:
         address = 0
         # Implement function to load an .ls8 file 
         # Pass in filename as argument
-        if len(sys.argv) != 2:
-            print("usage: file.py <filename>", file=sys.stderr)
-            sys.exit(1)
 
         try:
             with open(filename) as f:
@@ -29,13 +26,15 @@ class CPU:
                     # Convert any numbers from binary strings to integers
                     num = comment_split[0].strip()
 
-                    val = int(num, 2)
+                    if num != '':
+                        val = int(num, 2)
              
-                    self.ram[address] = val
-                    address += 1
+                        self.ram[address] = val
+                        address += 1
 
         except FileNotFoundError:
-            print(f"{sys.argv[0]}: {sys.argv[1]} not found")
+            # print(f"{sys.argv[0]}: {sys.argv[1]} not found")
+            print(f"{filename} not found")
             sys.exit(2)
 
     def alu(self, op, reg_a, reg_b):
@@ -43,6 +42,10 @@ class CPU:
 
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
+
+        if op == "MUL":
+            self.reg[reg_a] *= self.reg[reg_b]
+
         #elif op == "SUB": etc
         else:
             raise Exception("Unsupported ALU operation")
@@ -95,7 +98,7 @@ class CPU:
                 self.pc += 2
 
             elif IR == MUL:
-                self.reg[operand_a] *= self.reg[operand_b]
+                self.alu("MUL", operand_a, operand_b)
                 self.pc += 3
 
             else:

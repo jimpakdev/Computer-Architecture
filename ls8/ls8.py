@@ -19,7 +19,18 @@
 import sys
 from cpu import *
 
+# other way
+# import os
+
 cpu = CPU()
 
-cpu.load(sys.argv[1])
+# we need to make sure it exists
+if len(sys.argv) != 2:
+    print("usage: file.py <filename>", file=sys.stderr)
+    sys.exit(1)
+
+# path = os.path.dirname(os.path.abspath(__file__))
+
+# cpu.load(f'{path}/examples/print8.ls8')   
+cpu.load(sys.argv[1])   
 cpu.run()
