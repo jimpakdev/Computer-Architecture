@@ -6,50 +6,62 @@ PRINT_NUM      = 3
 SAVE           = 4  # SAVE VALUE INTO REGISTER
 PRINT_REGISTER = 5
 ADD            = 6
+PUSH           = 7
+POP            = 8
 
 
-memory = [
-    PRINT_BEEJ,
-    SAVE,  # SAVE 65 into R2
-    65,
-    2,
-    SAVE,  # Save 20 into R3
-    20,
-    3,
-    ADD,   # Add R2 + R3 = 65 + 20, store in R2
-    2,
-    3,
-    PRINT_REGISTER,
-    2,
-    HALT,
-  ]
+# 256 bytes of memory
+memory = [0] * 32
+
+# Create 8 registers, 1 byte each
+register = [0] * 8
+
+SP = 7  # Stack pointer is register R7
+
 
 
 pc = 0
 running = True
 
-# Create 8 registers
-register = [0] * 8
 
 def load_memory(filename):
     try:
         address = 0
 
-    with open(sys.argv[1]) as f:
-        for line in f:
-            # Prcoess comments:
-            # Ignore anything after a # symbol
-            comment_split = line.split("#")
-            # Convert any numbers from binary strings to integers
-            num = comment_split[0]
-            try: 
-                x = int(num, 2)
-            except ValueError:
-                continue
-            # Print in binary and decimal
-            print(f"{x:08b}: {x:d}")
+        with open(filename) as f:
+            for line in f:
+                # Process comments:
+                # Ignore anything after a # symbol
+                comment_split = line.split("#")
+
+                # Convert any numbers from binary strings to integers
+                num = comment_split[0].strip()
+                try:
+                    val = int(num)
+                except ValueError:
+                    continue
+
+                memory[address] = val
+                address += 1
+                # print(f"{val:08b}: {val:d}")
+
+    except FileNotFoundError:
+        print(f"{sys.argv[0]}: {sys.argv[1]} not found")
+        sys.exit(2)
+
+
+
+if len(sys.argv) != 2:
+    print("usage: simple.py <filename>", file=sys.stderr)
+    sys.exit(1)
+
+load_memory(sys.argv[1])
+
 
 while running:
+
+    # print(memory)
+
     # Do stuff
     command = memory[pc]
 
@@ -83,10 +95,27 @@ while running:
         register[reg_a] += register[reg_b] # Add registers, store in reg_a
         pc += 3
 
+
     elif command == PUSH:
         reg = memory[pc + 1]
+        val = register[reg]
+        # Decrement the SP.
+        register[SP] -= 1
+        # Copy the value in the given register to the address pointed to by SP.
+        memory[register[SP]] = val
+        pc += 2
+
+    elif command == POP:
+        reg = memory[pc + 1]
         val = memory[register[SP]]
+        # Copy the value from the address pointed to by SP to the given register.
+        register[reg] = val
+        # Increment SP.
+        register[SP] += 1
+        pc += 2
+
 
     else:
         print(f"Unknown instruction: {command}")
         sys.exit(1)
+

@@ -1,6 +1,12 @@
 """CPU functionality."""
-
 import sys
+
+LDI = 0b10000010
+PRN = 0b01000111
+HLT = 0b00000001 
+MUL = 0b10100010
+PUSH = 0b01000101
+POP = 0b01000110
 
 class CPU:
     """Main CPU class."""
@@ -10,6 +16,15 @@ class CPU:
         self.ram = [0] * 256
         self.reg = [0] * 8
         self.pc = 0
+        self.sp = 7
+        self.branch_table = {
+            LDI: self.LDI,
+            PRN: self.PRN,
+            HLT: self.HLT,
+            MUL: self.alu, 
+            PUSH: self.PUSH,
+            POP: self.POP,
+        }
 
     def load(self, filename):
         """Load a program into memory."""
@@ -24,8 +39,8 @@ class CPU:
                     # ignore anything after a #
                     comment_split = line.split("#")
                     # Convert any numbers from binary strings to integers
+                    # strip removes whitespaces
                     num = comment_split[0].strip()
-
                     if num != '':
                         val = int(num, 2)
              
@@ -70,13 +85,36 @@ class CPU:
 
         print()
 
+    def HLT(self):
+        sys.exit(1)
+
+    def PRN(self, operand_a):
+        val = self.reg[operand_a]
+        print(val)
+
+    def LDI(self, operand_a, operand_b):
+        self.reg[operand_a] = operand_b
+
+    def PUSH(self, operand_a):
+        reg = self.ram[operand_a]
+        val = self.reg[reg]
+        # Decrement the SP
+        self.reg[self.sp] -= 1
+        # Copy the value in the given register to the address pointed to by SP
+        self.ram[self.reg[self.sp]] = val
+        
+
+    def POP(self, operand_a):
+        reg = self.ram[operand_a]
+        val = self.ram[self.reg[self.sp]]
+        # Copy the value in the given register to the address pointed to by SP
+        self.reg[reg] = val
+        # Increment SP 
+        self.reg[self.sp] += 1
+        
+
     def run(self):
         """Run the CPU."""
-        LDI = 0b10000010
-        PRN = 0b01000111
-        HLT = 0b00000001 
-        MUL = 0b10100010
-
         running = True
 
         while running:
@@ -87,19 +125,28 @@ class CPU:
             operand_b = self.ram_read(self.pc + 2)
 
             if IR == HLT:
-                running = False
+                self.branch_table[HLT]()
 
             elif IR == LDI:
-                self.reg[operand_a] = operand_b
+                self.branch_table[LDI](operand_a, operand_b)
                 self.pc += 3
             
             elif IR == PRN:
-                print(self.reg[operand_a])
+                self.branch_table[PRN](operand_a)
                 self.pc += 2
 
             elif IR == MUL:
-                self.alu("MUL", operand_a, operand_b)
+                # self.alu("MUL", operand_a, operand_b)
+                self.branch_table[MUL]("MUL", operand_a, operand_b)
                 self.pc += 3
+
+            elif IR == PUSH:
+                self.branch_table[PUSH](operand_a)
+                self.pc += 2
+
+            elif IR == POP:
+                self.branch_table[POP](operand_a)
+                self.pc += 2
 
             else:
                 print('Error: cannot recognize instruction provided')
@@ -112,4 +159,5 @@ class CPU:
     # MDR == data to write 
     def raw_write(self, MAR, MDR):
         self.ram[MAR] = MDR
+
 
