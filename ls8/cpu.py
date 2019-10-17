@@ -4,9 +4,12 @@ import sys
 LDI = 0b10000010
 PRN = 0b01000111
 HLT = 0b00000001 
+ADD = 0b10100000
 MUL = 0b10100010
 PUSH = 0b01000101
 POP = 0b01000110
+CALL = 0b01010000
+RET = 0b00010001
 
 class CPU:
     """Main CPU class."""
@@ -21,9 +24,12 @@ class CPU:
             LDI: self.LDI,
             PRN: self.PRN,
             HLT: self.HLT,
+            ADD: self.alu,
             MUL: self.alu, 
             PUSH: self.PUSH,
             POP: self.POP,
+            CALL: self.CALL,
+            RET: self.RET,
         }
 
     def load(self, filename):
@@ -58,7 +64,7 @@ class CPU:
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
 
-        if op == "MUL":
+        elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
 
         #elif op == "SUB": etc
@@ -111,7 +117,28 @@ class CPU:
         self.reg[reg] = val
         # Increment SP 
         self.reg[self.sp] += 1
+
+    def CALL(self):
+        # Push the return address on the stack 
+        self.reg[self.sp] -= 1
+        self.ram[self.reg[self.sp]] = self.pc + 2
+        # The PC is set to the address stored in the given register
+        reg = self.ram[self.pc + 1]
+        # Jump to that location in RAM and execute first instruction
+        self.pc = self.reg[reg]
+
+    def RET(self):
+        # Return from subroutine 
+        # Pop the value from the top of the stack and store it in the PC
+        self.pc = self.ram[self.reg[self.sp]]
+        self.reg[self.sp] += 1
         
+    # MAR == address to write to
+    def ram_read(self, MAR):
+        return self.ram[MAR]
+    # MDR == data to write 
+    def raw_write(self, MAR, MDR):
+        self.ram[MAR] = MDR
 
     def run(self):
         """Run the CPU."""
@@ -135,8 +162,11 @@ class CPU:
                 self.branch_table[PRN](operand_a)
                 self.pc += 2
 
+            elif IR == ADD: 
+                self.branch_table[ADD]("ADD", operand_a, operand_b)
+                self.pc += 3
+
             elif IR == MUL:
-                # self.alu("MUL", operand_a, operand_b)
                 self.branch_table[MUL]("MUL", operand_a, operand_b)
                 self.pc += 3
 
@@ -148,16 +178,17 @@ class CPU:
                 self.branch_table[POP](operand_a)
                 self.pc += 2
 
+            elif IR == CALL:
+                self.branch_table[CALL]()
+
+            elif IR == RET:
+                self.branch_table[RET]()
+
             else:
                 print('Error: cannot recognize instruction provided')
 
         self.trace()
 
-    # MAR == address to write to
-    def ram_read(self, MAR):
-        return self.ram[MAR]
-    # MDR == data to write 
-    def raw_write(self, MAR, MDR):
-        self.ram[MAR] = MDR
+
 
 

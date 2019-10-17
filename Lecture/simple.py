@@ -8,7 +8,8 @@ PRINT_REGISTER = 5
 ADD            = 6
 PUSH           = 7
 POP            = 8
-
+CALL           = 9
+RET            = 10
 
 # 256 bytes of memory
 memory = [0] * 32
@@ -79,25 +80,27 @@ while running:
         pc += 1
 
     elif command == SAVE:
-        num = memory[pc+1]  # Get the num from 1st arg
-        reg = memory[pc+2]  # Get the register index from 2nd arg
+        num = memory[pc + 1 ]  # Get the num from 1st arg
+        reg = memory[pc + 2]  # Get the register index from 2nd arg
         register[reg] = num # Store the num in the right register
         pc += 3
 
     elif command == PRINT_REGISTER:
-        reg = memory[pc+1]   # Get the register index from 1st arg
+        reg = memory[pc + 1]   # Get the register index from 1st arg
         print(register[reg]) # Print contents of that register
         pc += 2
 
     elif command == ADD:
-        reg_a = memory[pc+1]   # Get the 1st register index from 1st arg
-        reg_b = memory[pc+2]   # Get the 2nd register index from 2nd arg
+        reg_a = memory[pc + 1]   # Get the 1st register index from 1st arg
+        reg_b = memory[pc + 2]   # Get the 2nd register index from 2nd arg
         register[reg_a] += register[reg_b] # Add registers, store in reg_a
         pc += 3
 
 
     elif command == PUSH:
+        # register of what we are going to copy 
         reg = memory[pc + 1]
+        # memory of our register
         val = register[reg]
         # Decrement the SP.
         register[SP] -= 1
@@ -106,7 +109,9 @@ while running:
         pc += 2
 
     elif command == POP:
+        # register of what we are going to copy 
         reg = memory[pc + 1]
+        # memory of our register
         val = memory[register[SP]]
         # Copy the value from the address pointed to by SP to the given register.
         register[reg] = val
@@ -114,6 +119,20 @@ while running:
         register[SP] += 1
         pc += 2
 
+    elif command == CALL:
+        # Push the return address on the stack
+        register[SP] -= 1
+        memory[register[SP]] = pc + 2   
+        # The PC is set to the address stored in the given register
+        reg = memory[pc + 1]
+        # Jump to that location in RAM and execute first instruction
+        pc = register[reg] 
+
+    elif command == RET:
+        # Return from subroutine 
+        # Pop the value from the top of the stack and store it in the PC
+        pc = memory[register[SP]]
+        register[SP] += 1
 
     else:
         print(f"Unknown instruction: {command}")
