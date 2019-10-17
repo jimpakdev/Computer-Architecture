@@ -96,7 +96,7 @@ class CPU:
         self.reg[operand_a] = operand_b
 
     def PUSH(self, operand_a):
-        reg = self.ram[operand_a]
+        reg = operand_a
         val = self.reg[reg]
         # Decrement the SP
         self.reg[self.sp] -= 1
@@ -105,7 +105,7 @@ class CPU:
         
 
     def POP(self, operand_a):
-        reg = self.ram[operand_a]
+        reg = operand_a
         val = self.ram[self.reg[self.sp]]
         # Copy the value in the given register to the address pointed to by SP
         self.reg[reg] = val
