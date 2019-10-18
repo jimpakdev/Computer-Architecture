@@ -10,6 +10,10 @@ PUSH = 0b01000101
 POP = 0b01000110
 CALL = 0b01010000
 RET = 0b00010001
+CMP = 0b10100111
+JMP = 0b01010100
+JEQ = 0b01010101
+JNE = 0b01010110
 
 class CPU:
     """Main CPU class."""
@@ -20,6 +24,7 @@ class CPU:
         self.reg = [0] * 8
         self.pc = 0
         self.sp = 7
+        self.flag = 0b00000000
         self.branch_table = {
             LDI: self.LDI,
             PRN: self.PRN,
@@ -30,7 +35,12 @@ class CPU:
             POP: self.POP,
             CALL: self.CALL,
             RET: self.RET,
+            CMP: self.alu,
+            JMP: self.JMP,
+            JEQ: self.JEQ,
+            JNE: self.JNE,
         }
+    
 
     def load(self, filename):
         """Load a program into memory."""
@@ -67,7 +77,25 @@ class CPU:
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
 
-        #elif op == "SUB": etc
+        #  `FL` bits: `00000LGE`
+        # * `L` Less-than: during a `CMP`, set to 1 if registerA is less than registerB,
+        #   zero otherwise.
+        # * `G` Greater-than: during a `CMP`, set to 1 if registerA is greater than
+        #   registerB, zero otherwise.
+        # * `E` Equal: during a `CMP`, set to 1 if registerA is equal to registerB, zero
+        #   otherwise.
+        elif op == "CMP":
+            if self.reg[reg_a] == self.reg[reg_b]:
+                self.flag = 0b00000001
+
+            elif self.reg[reg_a] < self.reg[reg_b]:
+                self.flag = 0b00000100
+
+            elif self.reg[reg_a] > self.reg[reg_b]:
+                self.flag = 0b00000010
+
+            # print("CMP / FLAG STATUS:", self.flag)
+
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -100,6 +128,7 @@ class CPU:
 
     def LDI(self, operand_a, operand_b):
         self.reg[operand_a] = operand_b
+        # print('LDI')
 
     def PUSH(self, operand_a):
         reg = operand_a
@@ -109,7 +138,6 @@ class CPU:
         # Copy the value in the given register to the address pointed to by SP
         self.ram[self.reg[self.sp]] = val
         
-
     def POP(self, operand_a):
         reg = operand_a
         val = self.ram[self.reg[self.sp]]
@@ -132,7 +160,29 @@ class CPU:
         # Pop the value from the top of the stack and store it in the PC
         self.pc = self.ram[self.reg[self.sp]]
         self.reg[self.sp] += 1
-        
+
+    def JMP(self, operand_a): 
+        # Set the `PC` to the address stored in the given register.
+        self.pc = self.reg[operand_a]
+
+    def JEQ(self, operand_a):
+        # If `E` flag is clear (false, 0), jump to the address stored in the given
+        # register.
+        if self.flag == 0b00000001:
+            self.JMP(operand_a)
+        else: 
+            self.pc += 2
+        # print('JEQ')
+
+    def JNE(self, operand_a):
+        # If `E` flag is clear (false, 0), jump to the address stored in the given
+        # register.
+        if self.flag != 0b00000001:
+            self.JMP(operand_a)
+        else:
+            self.pc += 2
+        # print('JNE')
+
     # MAR == address to write to
     def ram_read(self, MAR):
         return self.ram[MAR]
@@ -184,6 +234,19 @@ class CPU:
             elif IR == RET:
                 self.branch_table[RET]()
 
+            elif IR == CMP:
+                self.branch_table[CMP]("CMP", operand_a, operand_b)
+                self.pc += 3
+
+            elif IR == JMP:
+                self.branch_table[JMP](operand_a)
+                
+            elif IR == JEQ:
+                self.branch_table[JEQ](operand_a)
+                
+            elif IR == JNE:
+                self.branch_table[JNE](operand_a)
+                
             else:
                 print('Error: cannot recognize instruction provided')
 
